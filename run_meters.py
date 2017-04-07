@@ -97,7 +97,7 @@ def save_results(results, f):
 modbus_alive = get_alive_power_scouts()
 ps_files = {}
 for ps in modbus_alive:
-	ps_files[ps] = open('PS_log_{}.csv'.format(ps), 'a')
+	ps_files[ps] = open('LOGS/PS_log_{}.csv'.format(ps), 'a')
 
 ps_instruments = {}
 for ps in modbus_alive:
@@ -109,10 +109,13 @@ for ps in ps_instruments:
 	print_header(results, ps_files[ps])
 
 while True:
-	for ps in ps_instruments:
-		results = PS_read_measurment(ps_instruments[ps])
-		save_results(results, ps_files[ps])
-		print(results)
+	try:
+		for ps in ps_instruments:
+			results = PS_read_measurment(ps_instruments[ps])
+			save_results(results, ps_files[ps])
+			print(results)
+	except:
+		pass
 
 	time.sleep(interval)
 
