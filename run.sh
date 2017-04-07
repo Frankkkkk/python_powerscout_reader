@@ -7,6 +7,6 @@ cd `dirname $0`
 
 source venv/bin/activate
 
-./run_meters.py
+./run_meters.py 60
 
 

@@ -73,6 +73,7 @@ def print_header(results, f):
 	csv_result = ','.join(sorted_labels)
 	print(csv_result)
 	f.write(csv_result)
+	f.write('\n')
 
 def save_results(results, f):
 	sorted_labels = []
@@ -91,6 +92,7 @@ def save_results(results, f):
 
 	print(csv_result)
 	f.write(csv_result)
+	f.write('\n')
 
 
 
