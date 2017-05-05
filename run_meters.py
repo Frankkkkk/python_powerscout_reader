@@ -27,21 +27,25 @@ def PS_get_hardwareid(instrument):
 
 def PS_read_measurment(instrument):
 	wanted_values = {
-		'L1_V': 4058,
-		'L2_V': 4059,
-		'L3_V': 4060,
+		'V1': 4058,
+		'V2': 4059,
+		'V3': 4060,
 
-		'L1_A': 4055,
-		'L2_A': 4056,
-		'L3_A': 4057,
+		'A1': 4055,
+		'A2': 4056,
+		'A3': 4057,
 
-		'L1_P': 4028,
-		'L2_P': 4028,
-		'L3_P': 4028,
+		'P1': 4028,
+		'P2': 4029,
+		'P3': 4030,
 
-		'L1_phi': 4052,
-		'L2_phi': 4053,
-		'L3_phi': 4054,
+		'phi1': 4052,
+		'phi2': 4053,
+		'phi3': 4054,
+
+		'CI1': 10099,
+		'CI2': 10199,
+		'CI3': 10299,
 	}
 
 	read_results = {}
@@ -55,7 +59,8 @@ def PS_read_measurment(instrument):
 
 def get_alive_power_scouts():
 	modbus_alives = []
-	for mid in range(0xff+1):
+##	for mid in range(0xff+1):
+	for mid in [98]:
 		i = _get_instrument(mid)
 		try:
 			hid = PS_get_hardwareid(i)
@@ -95,8 +100,33 @@ def save_results(results, f):
 	f.write('\n')
 
 
+def display_results(results):
+	def _display_units():
+		print('|id ||V1 |A1  |P1  |φ1 ||V2 |A2  |P2  |φ2 ||V3 |A3  |P3  |φ3 |||CT1|CT2|CT3|')
+	def _display_separator():
+		print('|---||---|----|----|---||---|----|----|---||---|----|----|---|||---|---|---|')
+
+	_display_separator()
+	_display_units()
+	_display_separator()
+
+	for ps in results.keys():
+		r = results[ps]
+		print('|{:3d}|' \
+		'|{:3.3}|{:4.4}|{:4.4}|{:3.3}|' \
+		'|{:3.3}|{:4.4}|{:4.4}|{:3.3}|' \
+		'|{:3.3}|{:4.4}|{:4.4}|{:3.3}||'
+		'|{:3.3}|{:3.3}|{:3.3}|'.format(ps, \
+				str(r['V1']), str(r['A1']), str(r['P1']), str(r['phi1']), \
+				str(r['V2']), str(r['A2']), str(r['P2']), str(r['phi2']), \
+				str(r['V3']), str(r['A3']), str(r['P3']), str(r['phi3']), \
+				str(r['CI1']), str(r['CI2']), str(r['CI3']), \
+		))
+		_display_separator()
+
 
 modbus_alive = get_alive_power_scouts()
+
 ps_files = {}
 for ps in modbus_alive:
 	ps_files[ps] = open('LOGS/PS_log_{}.csv'.format(ps), 'a')
@@ -111,13 +141,15 @@ for ps in ps_instruments:
 	print_header(results, ps_files[ps])
 
 while True:
+	results = {}
 	try:
 		for ps in ps_instruments:
-			results = PS_read_measurment(ps_instruments[ps])
+			ps_results = PS_read_measurment(ps_instruments[ps])
 			save_results(results, ps_files[ps])
-			print(results)
+			results[ps] = ps_results
 	except:
 		pass
+	display_results(results)
 
 	time.sleep(interval)
 
