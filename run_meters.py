@@ -5,7 +5,7 @@
 import minimalmodbus
 import serial
 import time
-import sys
+import sys, os
 
 if len(sys.argv) != 2:
 	print('Usage: {} interval[s]'.format(sys.argv[0]))
@@ -23,7 +23,7 @@ def _get_instrument(modbus_id):
 	return instrument
 
 def PS_get_hardwareid(instrument):
-	return instrument.read_register(4209, 1)
+	return instrument.read_register(4200, 1)
 
 def PS_read_measurment(instrument):
 	wanted_values = {
@@ -48,19 +48,58 @@ def PS_read_measurment(instrument):
 		'CI3': 10299,
 	}
 
+	multipliers = {
+		'phi1': lambda x: x*10,
+		'phi2': lambda x: x*10,
+		'phi3': lambda x: x*10,
+
+		'CI1': lambda x: x*10,
+		'CI2': lambda x: x*10,
+		'CI3': lambda x: x*10,
+	}
+
+
+
+	scalar_divider = {
+		'V': lambda scalar: .1 if scalar <=3 else 1,
+		'A': lambda scalar: .1 if scalar == 0 else .1 if scalar <= 3 else 1,
+	}
+
+	scalars = {
+		'V1': 'V',
+		'V2': 'V',
+		'V3': 'V',
+
+		'A1': 'A',
+		'A2': 'A',
+		'A3': 'A',
+	}
+
+
+	scalar_value = instrument.read_register(4601)
+
 	read_results = {}
 	for wanted_value in wanted_values:
 		addr = wanted_values[wanted_value]
 
 		reading = instrument.read_register(addr, 1)
+		if wanted_value in multipliers:
+			reading = multipliers[wanted_value](reading)
+
+#		if wanted_value in scalars:
+#			print('SCALAR VAL: {}, div: {}'.format(scalar_value, scalar_divider[scalars[wanted_value]](scalar_value)))
+#			print('READING: {} {}'.format(wanted_value, reading))
+#			reading = reading * scalar_divider[scalars[wanted_value]](scalar_value)
+#			print('RESULT: {}'.format(reading))
+
 		read_results[wanted_value] = reading
 	return read_results
 
 
 def get_alive_power_scouts():
 	modbus_alives = []
-##	for mid in range(0xff+1):
-	for mid in [98]:
+	print('Scanning power scouts…')
+	for mid in range(0xff+1):
 		i = _get_instrument(mid)
 		try:
 			hid = PS_get_hardwareid(i)
@@ -102,20 +141,23 @@ def save_results(results, f):
 
 def display_results(results):
 	def _display_units():
-		print('|id ||V1 |A1  |P1  |φ1 ||V2 |A2  |P2  |φ2 ||V3 |A3  |P3  |φ3 |||CT1|CT2|CT3|')
+		print('|id | |V1 |A1  |P1  |φ1 | |V2 |A2  |P2  |φ2 | |V3 |A3  |P3  |φ3 | | |CT1|CT2|CT3|')
 	def _display_separator():
-		print('|---||---|----|----|---||---|----|----|---||---|----|----|---|||---|---|---|')
+		print('|---| |---|----|----|---| |---|----|----|---| |---|----|----|---| | |---|---|---|')
+
+	os.system('clear')
 
 	_display_separator()
 	_display_units()
 	_display_separator()
+	_display_separator()
 
 	for ps in results.keys():
 		r = results[ps]
-		print('|{:3d}|' \
-		'|{:3.3}|{:4.4}|{:4.4}|{:3.3}|' \
-		'|{:3.3}|{:4.4}|{:4.4}|{:3.3}|' \
-		'|{:3.3}|{:4.4}|{:4.4}|{:3.3}||'
+		print('|{:3d}| ' \
+		'|{:3.3}|{:4.4}|{:4.4}|{:3.3}| ' \
+		'|{:3.3}|{:4.4}|{:4.4}|{:3.3}| ' \
+		'|{:3.3}|{:4.4}|{:4.4}|{:3.3}| | '
 		'|{:3.3}|{:3.3}|{:3.3}|'.format(ps, \
 				str(r['V1']), str(r['A1']), str(r['P1']), str(r['phi1']), \
 				str(r['V2']), str(r['A2']), str(r['P2']), str(r['phi2']), \
